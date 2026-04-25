@@ -13,7 +13,7 @@ const chartData = [186, 305, 237, 73, 209, 214];
 
 const Page = () => {
   return (
-    <div className="h-[99vh] aspect-9/16 m-auto overflow-hidden">
+    <div className="h-[99vh] aspect-9/16 m-auto overflow-hidden flex">
       <div className="min-h-screen bg-[#0d1117] text-white flex flex-col pt-4 relative">
         {/* <!-- Background --> */}
 

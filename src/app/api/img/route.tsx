@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     return new ImageResponse(
       // Bagian ini adalah desain shadcn/Tailwind kamu
       // Gunakan dimensi 9:16 (1080x1920) untuk Story atau 1:1 (1080x1080) untuk Feed
-      <div tw="aspect-9/16 m-auto overflow-hidden">
+      <div tw=" m-auto overflow-hidden flex">
         <div tw="min-h-screen bg-[#0d1117] text-white flex flex-col pt-4 relative">
           {/* <!-- Background --> */}
 
