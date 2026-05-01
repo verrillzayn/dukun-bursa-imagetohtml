@@ -1,4 +1,5 @@
 /** biome-ignore-all lint/a11y/noSvgWithoutTitle: explanation */
+/** biome-ignore-all lint/suspicious/noExplicitAny: explanation */
 export const TrendingUp = (props: any) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
