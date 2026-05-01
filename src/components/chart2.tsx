@@ -1,13 +1,16 @@
+/** biome-ignore-all lint/a11y/noSvgWithoutTitle: <explanation> */
 export const Sparkline = ({
   data,
   width,
   height,
   color,
+  strokeWidth,
 }: {
   data: number[];
   width: number;
   height: number;
   color: string;
+  strokeWidth?: number;
 }) => {
   if (data.length < 2) return null;
 
@@ -50,7 +53,7 @@ export const Sparkline = ({
 
   return (
     <svg width={width} height={height} style={{ display: "flex" }}>
-      <title>Sparkline Chart</title>
+      {/* <title>Sparkline Chart</title> */}
       <defs>
         <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor={color} stopOpacity="0.4" />
@@ -66,7 +69,7 @@ export const Sparkline = ({
         d={d}
         fill="none"
         stroke={color}
-        strokeWidth="1.5"
+        strokeWidth={strokeWidth || "1.5"}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
