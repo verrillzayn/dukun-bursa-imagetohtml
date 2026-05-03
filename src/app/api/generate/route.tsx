@@ -6,33 +6,91 @@ import {
   ArrowDown,
   ArrowUpRight,
 } from "@/app/api/generate/_components/render-icon";
+import {
+  buildMarketDataFromGet,
+  buildMarketDataFromPost,
+} from "@/app/api/generate/_utils/market-data";
 import { Sparkline } from "@/components/chart2";
+import { type MarketMover, MOCK_MARKET_PULSE } from "@/lib/data";
 
 export const runtime = "edge";
 
-export async function GET(req: NextRequest) {
-  const chartData = [186, 305, 237, 73, 209, 214];
+const IMAGE_WIDTH = 1080;
+const IMAGE_HEIGHT = 1920;
+const CHART_WIDTH = IMAGE_WIDTH - 140;
+const CHART_HEIGHT = 195;
+const POSITIVE_COLOR = "#4ade80";
+const NEGATIVE_COLOR = "#f87171";
+const AI_TEXT = "Hari ini pasar lagi merah merona, waktunya cicil atau kabur?";
+
+const isNegative = (value: string) => value.includes("-");
+
+const loadAsset = async (path: string, origin: string) => {
+  const res = await fetch(new URL(path, origin));
+  if (!res.ok) {
+    throw new Error(`Failed to load asset ${path}: ${res.status}`);
+  }
+  return res.arrayBuffer();
+};
+
+const renderMoverRow = (
+  mover: MarketMover,
+  index: number,
+  accentColor: string,
+  valuePaddingLeft: string,
+) => (
+  <div
+    key={`${mover.ticker}-${index}`}
+    style={{
+      display: "flex",
+      //    border: "1px solid yellow",
+      height: "20%",
+      width: "100%",
+      paddingLeft: "32px",
+      gap: "12px",
+      //    justifyContent: "space-around",
+      alignItems: "center",
+    }}
+    tw="text-[28px] "
+  >
+    <td style={{}} tw="px-4 text-gray-500">
+      {index + 1}
+    </td>
+    <td tw="font-bold text-white" style={{ paddingLeft: "30px" }}>
+      {mover.ticker}
+    </td>
+    <td
+      style={{ paddingLeft: valuePaddingLeft, color: accentColor }}
+      tw="px-5 text-right font-semibold"
+    >
+      {mover.changePercent}
+    </td>
+  </div>
+);
+
+const handleRequest = async (req: NextRequest, method: "GET" | "POST") => {
+  const origin = req.nextUrl.origin;
+  const marketData =
+    method === "POST"
+      ? await buildMarketDataFromPost(req, MOCK_MARKET_PULSE)
+      : buildMarketDataFromGet(req, MOCK_MARKET_PULSE);
+
+  const { ihsg, fx, topGainers, topLosers, chartData } = marketData;
+  const ihsgIsUp = !isNegative(ihsg.change) && !isNegative(ihsg.changePercent);
+  const ihsgColor = ihsgIsUp ? POSITIVE_COLOR : NEGATIVE_COLOR;
+  const IhsgIcon = ihsgIsUp ? ArrowUpRight : ArrowDown;
+  const ihsgChangeText = `${
+    ihsgIsUp ? "▲" : "▼"
+  } ${ihsg.change} (${ihsg.changePercent})`;
+
+  const fxIsUp = !isNegative(fx.change) && !isNegative(fx.changePercent);
+  const fxColor = fxIsUp ? POSITIVE_COLOR : NEGATIVE_COLOR;
+  const FxIcon = fxIsUp ? ArrowUpRight : ArrowDown;
+  const fxChangeText = `${fx.change} (${fx.changePercent})`;
+
+  const bgImageUrl = new URL("/test-bg.png", origin).toString();
 
   try {
-    const { searchParams } = new URL(req.url);
-    const origin = req.nextUrl.origin;
-
-    // Ambil data dari query params (dikirim oleh n8n nanti)
-    const judul = searchParams.get("judul") || "Update IHSG";
-    const harga = searchParams.get("harga") || "0.00";
-    const perubahan = searchParams.get("perubahan") || "0%";
-    const isUp = !perubahan.includes("-");
-
-    const loadAsset = async (path: string) => {
-      const res = await fetch(new URL(path, origin));
-      if (!res.ok) {
-        throw new Error(`Failed to load asset ${path}: ${res.status}`);
-      }
-      return res.arrayBuffer();
-    };
-
-    const bgImageUrl = new URL("/test-bg.png", origin).toString();
-
     // Load only faces you actually use (keeps response fast)
     const [
       geistRegular,
@@ -43,13 +101,13 @@ export async function GET(req: NextRequest) {
       geistBoldItalic,
       geistExtraBold,
     ] = await Promise.all([
-      loadAsset("/fonts/Geist/ttf/Geist-Regular.ttf"),
-      loadAsset("/fonts/Geist/ttf/Geist-Medium.ttf"),
-      loadAsset("/fonts/Geist/ttf/Geist-MediumItalic.ttf"),
-      loadAsset("/fonts/Geist/ttf/Geist-Bold.ttf"),
-      loadAsset("/fonts/Geist/ttf/Geist-Italic.ttf"),
-      loadAsset("/fonts/Geist/ttf/Geist-BoldItalic.ttf"),
-      loadAsset("/fonts/Geist/ttf/Geist-ExtraBold.ttf"),
+      loadAsset("/fonts/Geist/ttf/Geist-Regular.ttf", origin),
+      loadAsset("/fonts/Geist/ttf/Geist-Medium.ttf", origin),
+      loadAsset("/fonts/Geist/ttf/Geist-MediumItalic.ttf", origin),
+      loadAsset("/fonts/Geist/ttf/Geist-Bold.ttf", origin),
+      loadAsset("/fonts/Geist/ttf/Geist-Italic.ttf", origin),
+      loadAsset("/fonts/Geist/ttf/Geist-BoldItalic.ttf", origin),
+      loadAsset("/fonts/Geist/ttf/Geist-ExtraBold.ttf", origin),
     ]);
 
     return new ImageResponse(
@@ -101,20 +159,26 @@ export async function GET(req: NextRequest) {
                   style={{ flexDirection: "column" }}
                 >
                   <div tw="flex items-center">
-                    <span tw="text-[68px] font-extrabold text-[#4ade80]">
-                      7.150,23
+                    <span
+                      tw="text-[68px] font-extrabold"
+                      style={{ color: ihsgColor }}
+                    >
+                      {ihsg.value}
                     </span>
-                    <ArrowUpRight
+                    <IhsgIcon
                       style={{
                         width: "3.5rem",
                         height: "3.5rem",
                         marginLeft: "0.5rem",
+                        color: ihsgColor,
                       }}
-                      tw="text-[#4ade80]"
                     />
                   </div>
-                  <p tw="text-[#4ade80] text-[28px] font-medium mt-0.5">
-                    ▲ +12,45 (+0,17%)
+                  <p
+                    tw="text-[28px] font-medium mt-0.5"
+                    style={{ color: ihsgColor }}
+                  >
+                    {ihsgChangeText}
                   </p>
                 </div>
               </div>
@@ -133,10 +197,10 @@ export async function GET(req: NextRequest) {
                 tw=""
               >
                 <Sparkline
-                  color="#4ade80"
+                  color={ihsgColor}
                   data={chartData}
-                  height={195}
-                  width={1080 - 140}
+                  height={CHART_HEIGHT}
+                  width={CHART_WIDTH}
                   strokeWidth={4}
                 />
               </div>
@@ -177,7 +241,7 @@ export async function GET(req: NextRequest) {
                     }}
                     tw="text-[29px] pt-[9px]"
                   >
-                    7.120
+                    {ihsg.open}
                   </p>
                   <p
                     style={{
@@ -189,7 +253,7 @@ export async function GET(req: NextRequest) {
                     }}
                     tw="text-[29px] pt-[9px]"
                   >
-                    7.165
+                    {ihsg.high}
                   </p>
                   <p
                     style={{
@@ -201,7 +265,7 @@ export async function GET(req: NextRequest) {
                     }}
                     tw="text-[29px] pt-[9px]"
                   >
-                    7.110
+                    {ihsg.low}
                   </p>
                 </div>
                 <div
@@ -226,25 +290,25 @@ export async function GET(req: NextRequest) {
                       //   top: "50%",
                       //   transform: "translate(0, -50%)",
                       fontWeight: 800,
-                      color: "#f87171",
+                      color: fxColor,
                     }}
                     tw="text-[28px]"
                   >
-                    Rp 15.650
+                    {fx.value}
                   </p>
                   <p style={{ marginTop: "12px" }}>
-                    <ArrowDown
+                    <FxIcon
                       style={{
                         width: "1.5em",
                         height: "1.5em",
-                        color: "#f87171",
+                        color: fxColor,
                       }}
                     />
                     <span
-                      tw="text-[#f87171] text-[18px]"
-                      style={{ fontWeight: 700 }}
+                      tw="text-[18px]"
+                      style={{ fontWeight: 700, color: fxColor }}
                     >
-                      -15 (-0,10%)
+                      {fxChangeText}
                     </span>
                   </p>
                 </div>
@@ -273,136 +337,11 @@ export async function GET(req: NextRequest) {
               }}
               tw=""
             >
-              <div
-                style={{
-                  display: "flex",
-                  //    border: "1px solid yellow",
-                  height: "20%",
-                  width: "100%",
-                  paddingLeft: "32px",
-                  gap: "12px",
-                  //    justifyContent: "space-around",
-                  alignItems: "center",
-                }}
-                tw="text-[28px] "
-              >
-                <td style={{}} tw="px-4 text-gray-500">
-                  1
-                </td>
-                <td tw="font-bold text-white" style={{ paddingLeft: "30px" }}>
-                  BBCA
-                </td>
-                <td
-                  style={{ paddingLeft: "108px" }}
-                  tw="px-5 text-right text-[#4ade80] font-semibold"
-                >
-                  +3.50%
-                </td>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  //    border: "1px solid yellow",
-                  height: "20%",
-                  width: "100%",
-                  paddingLeft: "32px",
-                  gap: "12px",
-                  //    justifyContent: "space-around",
-                  alignItems: "center",
-                }}
-                tw="text-[28px] "
-              >
-                <td style={{}} tw="px-4 text-gray-500">
-                  1
-                </td>
-                <td tw="font-bold text-white" style={{ paddingLeft: "30px" }}>
-                  BBCA
-                </td>
-                <td
-                  style={{ paddingLeft: "108px" }}
-                  tw="px-5 text-right text-[#4ade80] font-semibold"
-                >
-                  +3.50%
-                </td>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  //    border: "1px solid yellow",
-                  height: "20%",
-                  width: "100%",
-                  paddingLeft: "32px",
-                  gap: "12px",
-                  //    justifyContent: "space-around",
-                  alignItems: "center",
-                }}
-                tw="text-[28px] "
-              >
-                <td style={{}} tw="px-4 text-gray-500">
-                  1
-                </td>
-                <td tw="font-bold text-white" style={{ paddingLeft: "30px" }}>
-                  BBCA
-                </td>
-                <td
-                  style={{ paddingLeft: "108px" }}
-                  tw="px-5 text-right text-[#4ade80] font-semibold"
-                >
-                  +3.50%
-                </td>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  //    border: "1px solid yellow",
-                  height: "20%",
-                  width: "100%",
-                  paddingLeft: "32px",
-                  gap: "12px",
-                  //    justifyContent: "space-around",
-                  alignItems: "center",
-                }}
-                tw="text-[28px] "
-              >
-                <td style={{}} tw="px-4 text-gray-500">
-                  1
-                </td>
-                <td tw="font-bold text-white" style={{ paddingLeft: "30px" }}>
-                  BBCA
-                </td>
-                <td
-                  style={{ paddingLeft: "108px" }}
-                  tw="px-5 text-right text-[#4ade80] font-semibold"
-                >
-                  +3.50%
-                </td>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  //    border: "1px solid yellow",
-                  height: "20%",
-                  width: "100%",
-                  paddingLeft: "32px",
-                  gap: "12px",
-                  //    justifyContent: "space-around",
-                  alignItems: "center",
-                }}
-                tw="text-[28px] "
-              >
-                <td style={{}} tw="px-4 text-gray-500">
-                  1
-                </td>
-                <td tw="font-bold text-white" style={{ paddingLeft: "30px" }}>
-                  BBCA
-                </td>
-                <td
-                  style={{ paddingLeft: "108px" }}
-                  tw="px-5 text-right text-[#4ade80] font-semibold"
-                >
-                  +3.50%
-                </td>
-              </div>
+              {topGainers
+                .slice(0, 5)
+                .map((mover, index) =>
+                  renderMoverRow(mover, index, POSITIVE_COLOR, "108px"),
+                )}
             </div>
 
             <div
@@ -415,136 +354,11 @@ export async function GET(req: NextRequest) {
               }}
               tw=""
             >
-              <div
-                style={{
-                  display: "flex",
-                  //    border: "1px solid yellow",
-                  height: "20%",
-                  width: "100%",
-                  paddingLeft: "32px",
-                  gap: "12px",
-                  //    justifyContent: "space-around",
-                  alignItems: "center",
-                }}
-                tw="text-[28px] "
-              >
-                <td style={{}} tw="px-4 text-gray-500">
-                  1
-                </td>
-                <td tw="font-bold text-white" style={{ paddingLeft: "30px" }}>
-                  BBCA
-                </td>
-                <td
-                  style={{ paddingLeft: "110px" }}
-                  tw="px-5 text-right text-[#f87171] font-semibold"
-                >
-                  +3.50%
-                </td>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  //    border: "1px solid yellow",
-                  height: "20%",
-                  width: "100%",
-                  paddingLeft: "32px",
-                  gap: "12px",
-                  //    justifyContent: "space-around",
-                  alignItems: "center",
-                }}
-                tw="text-[28px] "
-              >
-                <td style={{}} tw="px-4 text-gray-500">
-                  1
-                </td>
-                <td tw="font-bold text-white" style={{ paddingLeft: "30px" }}>
-                  BBCA
-                </td>
-                <td
-                  style={{ paddingLeft: "110px" }}
-                  tw="px-5 text-right text-[#f87171] font-semibold"
-                >
-                  +3.50%
-                </td>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  //    border: "1px solid yellow",
-                  height: "20%",
-                  width: "100%",
-                  paddingLeft: "32px",
-                  gap: "12px",
-                  //    justifyContent: "space-around",
-                  alignItems: "center",
-                }}
-                tw="text-[28px] "
-              >
-                <td style={{}} tw="px-4 text-gray-500">
-                  1
-                </td>
-                <td tw="font-bold text-white" style={{ paddingLeft: "30px" }}>
-                  BBCA
-                </td>
-                <td
-                  style={{ paddingLeft: "110px" }}
-                  tw="px-5 text-right text-[#f87171] font-semibold"
-                >
-                  +3.50%
-                </td>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  //    border: "1px solid yellow",
-                  height: "20%",
-                  width: "100%",
-                  paddingLeft: "32px",
-                  gap: "12px",
-                  //    justifyContent: "space-around",
-                  alignItems: "center",
-                }}
-                tw="text-[28px] "
-              >
-                <td style={{}} tw="px-4 text-gray-500">
-                  1
-                </td>
-                <td tw="font-bold text-white" style={{ paddingLeft: "30px" }}>
-                  BBCA
-                </td>
-                <td
-                  style={{ paddingLeft: "110px" }}
-                  tw="px-5 text-right text-[#f87171] font-semibold"
-                >
-                  +3.50%
-                </td>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  //    border: "1px solid yellow",
-                  height: "20%",
-                  width: "100%",
-                  paddingLeft: "32px",
-                  gap: "12px",
-                  //    justifyContent: "space-around",
-                  alignItems: "center",
-                }}
-                tw="text-[28px] "
-              >
-                <td style={{}} tw="px-4 text-gray-500">
-                  1
-                </td>
-                <td tw="font-bold text-white" style={{ paddingLeft: "30px" }}>
-                  BBCA
-                </td>
-                <td
-                  style={{ paddingLeft: "110px" }}
-                  tw="px-5 text-right text-[#f87171] font-semibold"
-                >
-                  +3.50%
-                </td>
-              </div>
+              {topLosers
+                .slice(0, 5)
+                .map((mover, index) =>
+                  renderMoverRow(mover, index, NEGATIVE_COLOR, "110px"),
+                )}
             </div>
           </div>
 
@@ -568,7 +382,7 @@ export async function GET(req: NextRequest) {
               }}
               tw="text-[44px] italic"
             >
-              "Hari ini pasar lagi merah merona, waktunya cicil atau kabur?"
+              "{AI_TEXT}"
             </p>
           </div>
           <div
@@ -601,8 +415,8 @@ export async function GET(req: NextRequest) {
         </div>
       </div>,
       {
-        width: 1080,
-        height: 1920,
+        width: IMAGE_WIDTH,
+        height: IMAGE_HEIGHT,
         fonts: [
           { name: "Geist", data: geistRegular, weight: 400, style: "normal" },
           { name: "Geist", data: geistMedium, weight: 500, style: "normal" },
@@ -629,9 +443,17 @@ export async function GET(req: NextRequest) {
         ],
       },
     );
-  } catch (e: any) {
-    console.log({ error: e });
+  } catch (error: unknown) {
+    console.log({ error });
 
     return new Response(`Failed to generate image`, { status: 500 });
   }
+};
+
+export async function GET(req: NextRequest) {
+  return handleRequest(req, "GET");
+}
+
+export async function POST(req: NextRequest) {
+  return handleRequest(req, "POST");
 }
