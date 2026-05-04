@@ -22,7 +22,7 @@ const CHART_WIDTH = IMAGE_WIDTH - 140;
 const CHART_HEIGHT = 195;
 const POSITIVE_COLOR = "#4ade80";
 const NEGATIVE_COLOR = "#f87171";
-const AI_TEXT = "Hari ini pasar lagi merah merona, waktunya cicil atau kabur?";
+// const AI_TEXT = "Hari ini pasar lagi merah merona, waktunya cicil atau kabur?";
 
 const isNegative = (value: string) => value.includes("-");
 
@@ -85,7 +85,8 @@ const handleRequest = async (req: NextRequest, method: "GET" | "POST") => {
       ? await buildMarketDataFromPost(req, MOCK_MARKET_PULSE)
       : buildMarketDataFromGet(req, MOCK_MARKET_PULSE);
 
-  const { ihsg, fx, topGainers, topLosers, chartData } = marketData;
+  const { ihsg, fx, topGainers, topLosers, chartData, aiText, dateStr } =
+    marketData;
   const ihsgIsUp = !isNegative(ihsg.change) && !isNegative(ihsg.changePercent);
   const ihsgColor = ihsgIsUp ? POSITIVE_COLOR : NEGATIVE_COLOR;
   const IhsgIcon = ihsgIsUp ? ArrowUpRight : ArrowDown;
@@ -392,7 +393,7 @@ const handleRequest = async (req: NextRequest, method: "GET" | "POST") => {
               }}
               tw="text-[44px] italic"
             >
-              "{AI_TEXT}"
+              "{aiText}"
             </p>
           </div>
           <div
@@ -412,14 +413,15 @@ const handleRequest = async (req: NextRequest, method: "GET" | "POST") => {
             >
               {/* [Sumber Data] | [Waktu & Tanggal Update] */}
               Source: idx.co.id |{" "}
-              {
+              {/* {
                 new Date()
                   .toLocaleString("id-ID", {
                     dateStyle: "medium",
                     timeStyle: "short",
                   })
                   .split(",")[0]
-              }
+              } */}
+              {dateStr}
             </p>
           </div>
         </div>

@@ -4,6 +4,7 @@ import type { MarketMover, MarketPulseData } from "@/lib/data";
 export type MarketPulseInput = Partial<Omit<MarketPulseData, "ihsg" | "fx">> & {
   ihsg?: Partial<MarketPulseData["ihsg"]>;
   fx?: Partial<MarketPulseData["fx"]>;
+  aiText?: string;
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -72,6 +73,8 @@ const mergeMarketData = (
     topGainers: normalizeMovers(input.topGainers) ?? base.topGainers,
     topLosers: normalizeMovers(input.topLosers) ?? base.topLosers,
     chartData: normalizeChartData(input.chartData) ?? base.chartData,
+    aiText: pickString(input.aiText) ?? base.aiText,
+    dateStr: pickString(input.dateStr) ?? base.dateStr,
   };
 };
 
