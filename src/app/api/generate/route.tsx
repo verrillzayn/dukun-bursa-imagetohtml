@@ -1,4 +1,7 @@
 /** biome-ignore-all lint/performance/noImgElement: explanation */
+export const runtime = "edge";
+export const revalidate = 0;
+export const dynamic = "force-dynamic";
 
 import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
@@ -12,8 +15,6 @@ import {
 } from "@/app/api/generate/_utils/market-data";
 import { Sparkline } from "@/components/chart2";
 import { type MarketMover, MOCK_MARKET_PULSE } from "@/lib/data";
-
-export const runtime = "edge";
 
 const IMAGE_WIDTH = 1080;
 const IMAGE_HEIGHT = 1920;
