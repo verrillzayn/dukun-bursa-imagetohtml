@@ -53,14 +53,23 @@ const renderMoverRow = (
     }}
     tw="text-[28px] "
   >
-    <td style={{}} tw="px-4 text-gray-500">
+    <td style={{ width: "4rem" }} tw="px-4 text-gray-500">
       {index + 1}
     </td>
-    <td tw="font-bold text-white" style={{ paddingLeft: "30px" }}>
+    <td
+      tw="font-bold text-white"
+      style={{
+        paddingLeft: "10px",
+        width: "9rem",
+      }}
+    >
       {mover.ticker}
     </td>
     <td
-      style={{ paddingLeft: valuePaddingLeft, color: accentColor }}
+      style={{
+        paddingLeft: valuePaddingLeft,
+        color: accentColor,
+      }}
       tw="px-5 text-right font-semibold"
     >
       {mover.changePercent}
@@ -340,7 +349,7 @@ const handleRequest = async (req: NextRequest, method: "GET" | "POST") => {
               {topGainers
                 .slice(0, 5)
                 .map((mover, index) =>
-                  renderMoverRow(mover, index, POSITIVE_COLOR, "108px"),
+                  renderMoverRow(mover, index, POSITIVE_COLOR, "60px"),
                 )}
             </div>
 
@@ -357,7 +366,7 @@ const handleRequest = async (req: NextRequest, method: "GET" | "POST") => {
               {topLosers
                 .slice(0, 5)
                 .map((mover, index) =>
-                  renderMoverRow(mover, index, NEGATIVE_COLOR, "110px"),
+                  renderMoverRow(mover, index, NEGATIVE_COLOR, "60px"),
                 )}
             </div>
           </div>
