@@ -94,9 +94,9 @@ const handleRequest = async (req: NextRequest, method: "GET" | "POST") => {
     ihsgIsUp ? "▲" : "▼"
   } ${ihsg.change} (${ihsg.changePercent})`;
 
-  const fxIsUp = !isNegative(fx.change) && !isNegative(fx.changePercent);
+  const fxIsUp = isNegative(fx.change) && isNegative(fx.changePercent);
   const fxColor = fxIsUp ? POSITIVE_COLOR : NEGATIVE_COLOR;
-  const FxIcon = fxIsUp ? ArrowUpRight : ArrowDown;
+  const FxIcon = !fxIsUp ? ArrowUpRight : ArrowDown;
   const fxChangeText = `${fx.change} (${fx.changePercent})`;
 
   const bgImageUrl = new URL("/test-bg.png", origin).toString();
